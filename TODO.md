@@ -14,3 +14,9 @@
 - [x] 将 SJMC Yggdrasil 改动移植到上游 master（已合并 26.3 支持，PR #6712），分支 `sjmc-26.3`；
 - [x] 构建 Geyser-Spigot 2.12.0-SNAPSHOT，并在 Purpur 26.3 测试服成功启用（配置迁移至 config-version 10，yggdrasil 设置保留）；
 - [x] 在 26.3 测试服使用真实 SJMC 账号完成端到端验证（2026-10-15，登录与显示正常）。
+
+## Fabric 服务器支持
+
+- [x] 用本仓库构建 Geyser-Fabric 2.12.0-SNAPSHOT（`:fabric:build :fabric:mergeShadowAndJarJar`，需配合 `-I D:/gitt/fix-repos.gradle`）；
+- [x] 在 Fabric 26.3 专用服务器（fabric-server-launcher 26.3 + loader 0.19.5 + fabric-api 0.160.6）上完成启动验证：mod 加载、authlib-injector 生效、Geyser 在 UDP 19133 启用；
+- 在 Fabric 测试服使用真实 SJMC 账号完成一次端到端游戏内验证。
