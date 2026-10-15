@@ -8,3 +8,9 @@
 - [x] 在 Java 登录会话和 Bedrock 玩家实体生成时使用对应皮肤，而不是空皮肤或默认皮肤；
 - [x] 增加带签名 textures 属性、URL 边界和 Profile 查询失败回退测试；
 - 使用真实 SJMC 账号进行一次人工端到端验证。
+
+## Minecraft 26.3 支持
+
+- [x] 将 SJMC Yggdrasil 改动移植到上游 master（已合并 26.3 支持，PR #6712），分支 `sjmc-26.3`；
+- [x] 构建 Geyser-Spigot 2.12.0-SNAPSHOT，并在 Purpur 26.3 测试服成功启用（配置迁移至 config-version 10，yggdrasil 设置保留）；
+- 在 26.3 测试服使用真实 SJMC 账号完成端到端验证（登录、皮肤显示、重连免密）。
