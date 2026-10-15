@@ -261,3 +261,6 @@ locales/
 /permissions.yml
 
 bootstrap/mod/gametest/src/main/generated/.cache
+
+# Prebuilt jars distributed with this fork
+!builds/*.jar
