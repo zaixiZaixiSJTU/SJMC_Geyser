@@ -1,5 +1,7 @@
 <img src="https://geysermc.org/img/geyser-1760-860.png" alt="Geyser" width="600"/>
 
+[English](README.md) | [简体中文](README_ZH.md)
+
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Discord](https://img.shields.io/discord/613163671870242838.svg?color=%237289da&label=discord)](https://discord.gg/geysermc)
 [![Crowdin](https://badges.crowdin.net/e/51361b7f8a01644a238d0fe8f3bddc62/localized.svg)](https://translate.geysermc.org/)
@@ -7,6 +9,10 @@
 Geyser is a bridge between Minecraft: Bedrock Edition and Minecraft: Java Edition, closing the gap from those wanting to play true cross-platform.
 
 Geyser is an [Open Collaboration](https://opencollaboration.dev/) project.
+
+## SJMC Yggdrasil support
+
+This fork adds configurable third-party Yggdrasil authentication for servers using authlib-injector. It defaults to the SJMC user center. See [the setup and security guide](docs/yggdrasil-authentication.md).
 
 ## What is Geyser?
 Geyser is a proxy, bridging the gap between Minecraft: Bedrock Edition and Minecraft: Java Edition servers.

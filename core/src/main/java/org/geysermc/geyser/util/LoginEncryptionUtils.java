@@ -35,6 +35,7 @@ import org.cloudburstmc.protocol.bedrock.packet.ServerToClientHandshakePacket;
 import org.cloudburstmc.protocol.bedrock.util.ChainValidationResult;
 import org.cloudburstmc.protocol.bedrock.util.ChainValidationResult.IdentityData;
 import org.cloudburstmc.protocol.bedrock.util.EncryptionUtils;
+import org.geysermc.cumulus.form.CustomForm;
 import org.geysermc.cumulus.form.ModalForm;
 import org.geysermc.cumulus.form.SimpleForm;
 import org.geysermc.cumulus.response.SimpleFormResponse;
@@ -221,6 +222,35 @@ public class LoginEncryptionUtils {
 
                             session.disconnect(GeyserLocale.getPlayerLocaleString("geyser.auth.login.form.disconnect", session.locale()));
                         }));
+    }
+
+    public static void buildAndShowYggdrasilLoginWindow(GeyserSession session, String error) {
+        if (session.isLoggedIn() || session.isClosed()) {
+            return;
+        }
+
+        CustomForm.Builder builder = CustomForm.builder()
+            .title("Third-party Java account / 第三方 Java 账号")
+            .label("Sign in to the configured Yggdrasil service. The password is used for this login only and is not saved.\n"
+                + "登录所配置的 Yggdrasil 服务。密码仅用于本次登录，不会保存。")
+            .input("Account / 账号", "Username or email / 用户名或邮箱")
+            .input("Password / 密码", "Password / 密码");
+
+        if (error != null && !error.isBlank()) {
+            builder.label("Login failed / 登录失败: " + error);
+        }
+
+        builder.validResultHandler(response -> {
+            String identifier = response.next();
+            String password = response.next();
+            if (identifier == null || identifier.isBlank() || password == null || password.isEmpty()) {
+                buildAndShowYggdrasilLoginWindow(session, "Account and password are required / 账号和密码不能为空");
+                return;
+            }
+            session.authenticateWithYggdrasil(identifier, password);
+        });
+        builder.closedOrInvalidResultHandler((form, result) -> session.disconnect("Login cancelled / 已取消登录"));
+        session.sendForm(builder);
     }
 
     /**

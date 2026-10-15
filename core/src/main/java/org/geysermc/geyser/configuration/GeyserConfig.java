@@ -343,7 +343,7 @@ public interface GeyserConfig {
 
         @Comment("""
             What type of authentication Bedrock players will be checked against when logging into the Java server.
-            Can be "floodgate" (see https://wiki.geysermc.org/floodgate/), "online", or "offline".""")
+            Can be "floodgate" (see https://wiki.geysermc.org/floodgate/), "online", "offline", or "yggdrasil".""")
         @NonNull
         @Override
         default AuthType authType() {
@@ -351,6 +351,12 @@ public interface GeyserConfig {
         }
 
         void authType(AuthType authType);
+
+        @Comment("The authlib-injector compatible API root. Used only when auth-type is yggdrasil.")
+        @DefaultString("https://skin.mc.sjtu.cn/api/yggdrasil")
+        @NonNull
+        String yggdrasilApiUrl();
+
         boolean forwardHostname();
 
         @Override

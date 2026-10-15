@@ -44,6 +44,7 @@ import org.geysermc.geyser.api.skin.SkinData;
 import org.geysermc.geyser.api.skin.SkinGeometry;
 import org.geysermc.geyser.entity.type.player.AvatarEntity;
 import org.geysermc.geyser.session.GeyserSession;
+import org.geysermc.geyser.session.auth.yggdrasil.YggdrasilAuthenticationService;
 import org.geysermc.geyser.text.GeyserLocale;
 import org.geysermc.geyser.util.FileUtils;
 import org.geysermc.geyser.util.WebUtils;
@@ -626,10 +627,14 @@ public class SkinProvider {
     }
 
     private static BufferedImage downloadImage(String imageUrl) throws IOException {
-        if (!TextureUrlChecker.isAllowedTextureDomain(imageUrl)) {
+        GeyserImpl geyser = GeyserImpl.getInstance();
+        boolean configuredYggdrasilTexture = geyser.config().java().authType() == AuthType.YGGDRASIL
+            && YggdrasilAuthenticationService.isTextureUrlAllowed(imageUrl, geyser.config().java().yggdrasilApiUrl());
+        if (!TextureUrlChecker.isAllowedTextureDomain(imageUrl) && !configuredYggdrasilTexture) {
             return EMPTY_SKIN_IMAGE;
         }
         HttpURLConnection con = (HttpURLConnection) new URL(imageUrl).openConnection();
+        con.setInstanceFollowRedirects(false);
         con.setRequestProperty("User-Agent", WebUtils.getUserAgent());
         con.setConnectTimeout(10000);
         con.setReadTimeout(10000);

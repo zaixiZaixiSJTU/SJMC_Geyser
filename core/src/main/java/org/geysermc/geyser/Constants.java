@@ -38,6 +38,7 @@ public final class Constants {
     public static final String FLOODGATE_DOWNLOAD_LOCATION = "https://geysermc.org/download#floodgate";
     public static final String GEYSER_DOWNLOAD_LOCATION = "https://geysermc.org/download";
     static final String SAVED_AUTH_CHAINS_FILE = "saved-auth-chains.json";
+    static final String SAVED_YGGDRASIL_LOGINS_FILE = "saved-yggdrasil-logins.json";
 
     public static final String GEYSER_CUSTOM_NAMESPACE = "geyser_custom";
 

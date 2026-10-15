@@ -71,6 +71,9 @@ public class JavaPlayerInfoUpdateTranslator extends PacketTranslator<Clientbound
                     // Entity is ourself!
                     playerEntity = session.getPlayerEntity();
                     playerEntity.setUsername(profile.getName());
+                    if (profile.getProperty("textures") == null && session.getCustomYggdrasilProfile() != null) {
+                        profile = session.getCustomYggdrasilProfile();
+                    }
                     playerEntity.setSkin(profile, () -> GeyserImpl.getInstance().getLogger().debug("Loaded Local Bedrock Java Skin Data for " + session.getClientData().getUsername()));
                 } else {
                     // It's a new player

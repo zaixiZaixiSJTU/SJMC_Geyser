@@ -171,6 +171,7 @@ import org.geysermc.geyser.registry.type.BlockMappings;
 import org.geysermc.geyser.registry.type.ItemMappings;
 import org.geysermc.geyser.session.auth.AuthData;
 import org.geysermc.geyser.session.auth.BedrockClientData;
+import org.geysermc.geyser.session.auth.yggdrasil.YggdrasilAuthenticationService;
 import org.geysermc.geyser.session.cache.AdvancementsCache;
 import org.geysermc.geyser.session.cache.BlockBreakHandler;
 import org.geysermc.geyser.session.cache.BookEditCache;
@@ -209,6 +210,7 @@ import org.geysermc.geyser.util.InventoryUtils;
 import org.geysermc.geyser.util.LoginEncryptionUtils;
 import org.geysermc.geyser.util.MathUtils;
 import org.geysermc.mcprotocollib.auth.GameProfile;
+import org.geysermc.mcprotocollib.auth.SessionService;
 import org.geysermc.mcprotocollib.network.BuiltinFlags;
 import org.geysermc.mcprotocollib.network.ClientSession;
 import org.geysermc.mcprotocollib.network.packet.Packet;
@@ -274,6 +276,8 @@ public class GeyserSession implements GeyserConnection, GeyserCommandSource {
     private final GeyserImpl geyser;
     private final UpstreamSession upstream;
     private DownstreamSession downstream;
+    private @Nullable SessionService customSessionService;
+    private @Nullable GameProfile customYggdrasilProfile;
     /**
      * The loop where all packets and ticking is processed to prevent concurrency issues.
      * If this is manually called, ensure that any exceptions are properly handled.
@@ -1095,6 +1099,84 @@ public class GeyserSession implements GeyserConnection, GeyserCommandSource {
         authenticateWithMicrosoftCode(false);
     }
 
+    public void authenticateWithYggdrasil(String identifier, String password) {
+        if (loggedIn || loggingIn) {
+            return;
+        }
+        loggingIn = true;
+
+        CompletableFuture.supplyAsync(() -> {
+            try {
+                YggdrasilAuthenticationService service = new YggdrasilAuthenticationService(
+                    geyser.config().java().yggdrasilApiUrl()
+                );
+                YggdrasilAuthenticationService.AuthenticationResult result = service.authenticate(identifier, password);
+                this.protocol = new MinecraftProtocol(result.profile(), result.accessToken());
+                this.customSessionService = service.sessionService();
+                this.customYggdrasilProfile = result.profile();
+                geyser.saveYggdrasilLogin(xuid(), YggdrasilAuthenticationService.SavedLogin.from(result));
+                return null;
+            } catch (Exception e) {
+                return e;
+            }
+        }).whenComplete((failure, throwable) -> executeInEventLoop(() -> {
+            if (closed) {
+                return;
+            }
+            Throwable error = throwable != null ? throwable : failure;
+            if (error != null) {
+                loggingIn = false;
+                geyser.getLogger().warning("Yggdrasil login failed for " + bedrockUsername() + ": " + error.getMessage());
+                LoginEncryptionUtils.buildAndShowYggdrasilLoginWindow(this, error.getMessage());
+                return;
+            }
+
+            try {
+                connectDownstream();
+            } catch (Throwable t) {
+                loggingIn = false;
+                geyser.getLogger().error("Unable to connect after Yggdrasil login", t);
+                LoginEncryptionUtils.buildAndShowYggdrasilLoginWindow(this, "Unable to connect to the Java server");
+            }
+        }));
+    }
+
+    public void authenticateWithStoredYggdrasil() {
+        if (loggedIn || loggingIn) return;
+        YggdrasilAuthenticationService.SavedLogin saved = geyser.yggdrasilLoginFor(xuid());
+        if (saved == null) return;
+        loggingIn = true;
+        CompletableFuture.supplyAsync(() -> {
+            try {
+                YggdrasilAuthenticationService service = new YggdrasilAuthenticationService(
+                    geyser.config().java().yggdrasilApiUrl());
+                YggdrasilAuthenticationService.AuthenticationResult result = saved.result();
+                service.validate(result);
+                this.protocol = new MinecraftProtocol(result.profile(), result.accessToken());
+                this.customSessionService = service.sessionService();
+                this.customYggdrasilProfile = result.profile();
+                return null;
+            } catch (Exception e) {
+                return e;
+            }
+        }).whenComplete((failure, throwable) -> executeInEventLoop(() -> {
+            if (closed) return;
+            Throwable error = throwable != null ? throwable : failure;
+            if (error != null) {
+                geyser.removeYggdrasilLogin(xuid());
+                loggingIn = false;
+                LoginEncryptionUtils.buildAndShowYggdrasilLoginWindow(this, null);
+                return;
+            }
+            try {
+                connectDownstream();
+            } catch (Throwable t) {
+                loggingIn = false;
+                LoginEncryptionUtils.buildAndShowYggdrasilLoginWindow(this, "Unable to connect to the Java server");
+            }
+        }));
+    }
+
     /**
      * Present a form window to the user asking to log in with another web browser
      */
@@ -1213,6 +1295,10 @@ public class GeyserSession implements GeyserConnection, GeyserCommandSource {
 
         // Disable automatic creation of a new TcpClientSession when transferring - we don't use that functionality.
         this.downstream.getSession().setFlag(MinecraftConstants.FOLLOW_TRANSFERS, false);
+
+        if (customSessionService != null) {
+            downstream.setFlag(MinecraftConstants.SESSION_SERVICE_KEY, customSessionService);
+        }
 
         if (geyser.config().advanced().java().useHaproxyProtocol()) {
             downstream.setFlag(BuiltinFlags.CLIENT_PROXIED_ADDRESS, upstream.getAddress());

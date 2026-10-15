@@ -37,6 +37,7 @@ import org.cloudburstmc.protocol.bedrock.packet.SetEntityLinkPacket;
 import org.cloudburstmc.protocol.bedrock.packet.UpdateAttributesPacket;
 import org.geysermc.geyser.GeyserImpl;
 import org.geysermc.geyser.api.entity.type.player.GeyserPlayerEntity;
+import org.geysermc.geyser.api.network.AuthType;
 import org.geysermc.geyser.entity.VanillaEntities;
 import org.geysermc.geyser.entity.attribute.GeyserAttributeType;
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
@@ -77,7 +78,9 @@ public class PlayerEntity extends AvatarEntity implements GeyserPlayerEntity {
         super(context, profile.getName());
         this.customNameVisible = true;
         try {
-            this.textures = profile.getTextures(true);
+            // Alternative Yggdrasil services sign textures with their own key. The download path separately
+            // restricts these URLs to the configured service host.
+            this.textures = profile.getTextures(context.session().remoteServer().authType() != AuthType.YGGDRASIL);
         } catch (Exception e) {
             GeyserImpl.getInstance().getLogger().debug("Error loading textures for profile %s! Got: %s", profile, e);
             this.textures = null;

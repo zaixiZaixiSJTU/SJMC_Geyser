@@ -144,6 +144,7 @@ public class ConfigLoaderTest {
         assertEquals(configClass == GeyserRemoteConfig.class ? "test.geysermc.org" : null, config.java().address());
         assertEquals(configClass == GeyserRemoteConfig.class ? 25564 : 0, config.java().port());
         assertEquals(AuthType.FLOODGATE, config.java().authType());
+        assertEquals("https://skin.mc.sjtu.cn/api/yggdrasil", config.java().yggdrasilApiUrl());
         assertTrue(config.java().forwardHostname());
 
         // Verify motd section
@@ -253,6 +254,9 @@ public class ConfigLoaderTest {
         assertEquals(standalone, config.node("advanced", "java", "disable-compression").virtual());
 
         boolean bungee = platformType == PlatformType.BUNGEECORD;
+
+        assertEquals("https://skin.mc.sjtu.cn/api/yggdrasil",
+            config.node("java", "yggdrasil-api-url").getString());
 
         // Test @IncludePlatform - bungee-listener should ONLY be present on BungeeCord platform
         assertEquals(!bungee, config.node("advanced", "java", "bungee-listener").virtual());

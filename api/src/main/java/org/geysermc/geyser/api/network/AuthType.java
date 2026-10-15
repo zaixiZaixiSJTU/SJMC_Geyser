@@ -34,6 +34,10 @@ public enum AuthType {
     OFFLINE,
     ONLINE,
     /**
+     * Authenticate against a configurable third-party Yggdrasil service.
+     */
+    YGGDRASIL,
+    /**
      * The internal name for connecting to an online mode server without needing a Java account. The presence of this
      * authentication type does not necessarily mean the Floodgate plugin is installed; it only means that this
      * authentication type will be attempted.

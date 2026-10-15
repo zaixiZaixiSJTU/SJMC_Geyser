@@ -95,6 +95,7 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.session.PendingMicrosoftAuthentication;
 import org.geysermc.geyser.session.SessionDisconnectListener;
 import org.geysermc.geyser.session.SessionManager;
+import org.geysermc.geyser.session.auth.yggdrasil.YggdrasilAuthenticationService;
 import org.geysermc.geyser.skin.FloodgateSkinUploader;
 import org.geysermc.geyser.skin.ProvidedSkins;
 import org.geysermc.geyser.skin.SkinProvider;
@@ -184,6 +185,7 @@ public class GeyserImpl implements GeyserApi, EventRegistrar {
     private PendingMicrosoftAuthentication pendingMicrosoftAuthentication;
     @Getter(AccessLevel.NONE)
     private Map<String, String> savedAuthChains;
+    private Map<String, YggdrasilAuthenticationService.SavedLogin> savedYggdrasilLogins;
 
     @Getter
     private static GeyserImpl instance;
@@ -531,6 +533,7 @@ public class GeyserImpl implements GeyserApi, EventRegistrar {
         setupMetrics(config, logger);
 
         loadSavedAuthChains(config, logger);
+        loadSavedYggdrasilLogins(config, logger);
 
         newsHandler.handleNews(null, NewsItemAction.ON_SERVER_STARTED);
 
@@ -856,6 +859,33 @@ public class GeyserImpl implements GeyserApi, EventRegistrar {
         }
     }
 
+    public YggdrasilAuthenticationService.SavedLogin yggdrasilLoginFor(@NonNull String xuid) {
+        return savedYggdrasilLogins == null ? null : savedYggdrasilLogins.get(xuid);
+    }
+
+    public void saveYggdrasilLogin(@NonNull String xuid, YggdrasilAuthenticationService.SavedLogin login) {
+        if (savedYggdrasilLogins == null) return;
+        if (!Objects.equals(login, savedYggdrasilLogins.put(xuid, login))) {
+            scheduledThread.execute(this::writeYggdrasilLogins);
+        }
+    }
+
+    public void removeYggdrasilLogin(@NonNull String xuid) {
+        if (savedYggdrasilLogins != null && savedYggdrasilLogins.remove(xuid) != null) {
+            scheduledThread.execute(this::writeYggdrasilLogins);
+        }
+    }
+
+    private void writeYggdrasilLogins() {
+        File file = getBootstrap().getSavedUserLoginsFolder().resolve(Constants.SAVED_YGGDRASIL_LOGINS_FILE).toFile();
+        Type type = new TypeToken<Map<String, YggdrasilAuthenticationService.SavedLogin>>() { }.getType();
+        try (FileWriter writer = new FileWriter(file)) {
+            GSON.toJson(savedYggdrasilLogins, type, writer);
+        } catch (IOException e) {
+            getLogger().error("Unable to write saved Yggdrasil logins!", e);
+        }
+    }
+
     private <T> void runIfNonNull(T nullable, Consumer<@NonNull T> consumer) {
         if (nullable != null) {
             consumer.accept(nullable);
@@ -1066,6 +1096,25 @@ public class GeyserImpl implements GeyserApi, EventRegistrar {
             }
         } else {
             savedAuthChains = null;
+        }
+    }
+
+    private void loadSavedYggdrasilLogins(GeyserConfig config, GeyserLogger logger) {
+        if (config.java().authType() != AuthType.YGGDRASIL) {
+            savedYggdrasilLogins = null;
+            return;
+        }
+        savedYggdrasilLogins = new ConcurrentHashMap<>();
+        File file = bootstrap.getSavedUserLoginsFolder().resolve(Constants.SAVED_YGGDRASIL_LOGINS_FILE).toFile();
+        if (!file.exists()) return;
+        Type type = new TypeToken<Map<String, YggdrasilAuthenticationService.SavedLogin>>() { }.getType();
+        try (FileReader reader = new FileReader(file)) {
+            Map<String, YggdrasilAuthenticationService.SavedLogin> loaded = GSON.fromJson(reader, type);
+            if (loaded != null) loaded.forEach((xuid, login) -> {
+                if (xuid != null && !xuid.isBlank() && login != null) savedYggdrasilLogins.put(xuid, login);
+            });
+        } catch (Exception e) {
+            logger.error("Cannot load saved Yggdrasil logins!", e);
         }
     }
 }

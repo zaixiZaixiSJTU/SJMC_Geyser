@@ -59,6 +59,12 @@ public class BedrockSetLocalPlayerAsInitializedTranslator extends PacketTranslat
                         }
                     }
                     // else we were able to log the user in
+                } else if (session.remoteServer().authType() == AuthType.YGGDRASIL && !session.isLoggedIn()) {
+                    if (session.getGeyser().yggdrasilLoginFor(session.xuid()) != null) {
+                        session.authenticateWithStoredYggdrasil();
+                    } else {
+                        LoginEncryptionUtils.buildAndShowYggdrasilLoginWindow(session, null);
+                    }
                 }
                 if (session.isLoggedIn()) {
                     // Sigh - as of Bedrock 1.18
