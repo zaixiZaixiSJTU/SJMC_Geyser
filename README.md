@@ -1,62 +1,75 @@
-<img src="https://geysermc.org/img/geyser-1760-860.png" alt="Geyser" width="600"/>
+# SJMC Geyser
 
-[English](README.md) | [简体中文](README_ZH.md)
+基于 [Geyser](https://github.com/GeyserMC/Geyser) 的分支，为使用 **authlib-injector** 的 Java 服务器增加第三方 Yggdrasil 认证：基岩版玩家可以使用 SJMC（或任意兼容 authlib-injector 的）账号登录 Java 服务器。
 
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Discord](https://img.shields.io/discord/613163671870242838.svg?color=%237289da&label=discord)](https://discord.gg/geysermc)
-[![Crowdin](https://badges.crowdin.net/e/51361b7f8a01644a238d0fe8f3bddc62/localized.svg)](https://translate.geysermc.org/)
+- 支持 Spigot / Paper / Purpur 插件与 Fabric 服务器模组（Minecraft 26.3）
+- 认证服务默认指向 SJMC 用户中心，也可配置为任意兼容 authlib-injector 的 Yggdrasil API
+- 支持第三方皮肤显示；密码不落盘，登录令牌按基岩版 XUID 保存，令牌有效时重连免密
 
-Geyser is a bridge between Minecraft: Bedrock Edition and Minecraft: Java Edition, closing the gap from those wanting to play true cross-platform.
+预编译 jar 在 [`builds/`](builds/) 目录。
 
-Geyser is an [Open Collaboration](https://opencollaboration.dev/) project.
+## 安装与配置
 
-## SJMC Yggdrasil support
+### 1. 放置文件
 
-This fork adds configurable third-party Yggdrasil authentication for servers using authlib-injector. It defaults to the SJMC user center. See [the setup and security guide](docs/yggdrasil-authentication.md).
+| 平台 | 放入目录 | 额外要求 |
+| --- | --- | --- |
+| Spigot / Paper / Purpur | `plugins/` | 无 |
+| Fabric 服务器 | `mods/` | 需要 fabric-api（对应 26.3 的版本） |
 
-## What is Geyser?
-Geyser is a proxy, bridging the gap between Minecraft: Bedrock Edition and Minecraft: Java Edition servers.
-The ultimate goal of this project is to allow Minecraft: Bedrock Edition users to join Minecraft: Java Edition servers as seamlessly as possible. However, due to the nature of Geyser translating packets over the network of two different games, *do not expect everything to work perfectly!*
+### 2. Java 服务端启用 authlib-injector
 
-Special thanks to the DragonProxy project for being a trailblazer in protocol translation and for all the team members who have joined us here!
+在服务端启动参数中加入（地址必须与 Geyser 配置一致）：
 
-## Supported Versions
+```text
+-javaagent:authlib-injector.jar=https://skin.mc.sjtu.cn/api/yggdrasil/
+```
 
-| Edition | Supported Versions                                                                                |
-|---------|---------------------------------------------------------------------------------------------------|
-| Bedrock | 26.30, 26.31, 26.32, 26.33, 26.34, 26.40, 26.41, 26.42, 26.43, 26.44, 26.45, 26.50, 26.51, 26.52  |
-| Java    | 26.3 (For older versions, [see this guide](https://geysermc.org/wiki/geyser/supported-versions/)) |
+### 3. 配置 Geyser
 
-## Setting Up
-Take a look [here](https://geysermc.org/wiki/geyser/setup/) for how to set up Geyser.
+编辑配置文件（位置见下一节），关键项：
 
-## Links:
-- Website: https://geysermc.org
-- Docs: https://geysermc.org/wiki/geyser/
-- Download: https://geysermc.org/download
-- Discord: https://discord.gg/geysermc
-- Donate: https://opencollective.com/geysermc
-- Test Server: `test.geysermc.org` port `25565` for Java and `19132` for Bedrock
+```yaml
+java:
+  auth-type: yggdrasil
+  yggdrasil-api-url: https://skin.mc.sjtu.cn/api/yggdrasil/
+```
 
-## What's Left to be Added/Fixed
-- Near-perfect movement (to the point where anticheat on large servers is unlikely to ban you)
-- Some Entity Flags
+- `auth-type: yggdrasil` 启用第三方认证；原有的 `online`、`offline`、`floodgate` 模式不受影响
+- `yggdrasil-api-url` 仅接受 HTTPS（`localhost`、`127.0.0.1` 等回环地址允许 HTTP，便于本地测试）
 
-## What can't be fixed
-There are a few things Geyser is unable to support due to various differences between Minecraft Bedrock and Java. For a list of these limitations, see the [Current Limitations](https://geysermc.org/wiki/geyser/current-limitations/) page.
+### 4. 玩家登录
 
-## Compiling
-1. Clone the repo to your computer
-2. Navigate to the Geyser root directory and run `git submodule update --init --recursive`. This command downloads all the needed submodules for Geyser and is a crucial step in this process.
-3. Run `gradlew build` and locate to `bootstrap/build` folder.
+基岩版客户端连接后会弹出「第三方 Java 账号」表单，输入账号与密码即可进入。若该基岩账号的令牌仍然有效，则直接进入；认证失败时错误信息会显示在表单中。
 
-## Contributing
-Any contributions are appreciated. Please feel free to reach out to us on [Discord](https://discord.gg/geysermc) if
-you're interested in helping out with Geyser.
+## 配置与数据存储位置
 
-## Libraries Used:
-- [Adventure Text Library](https://github.com/KyoriPowered/adventure)
-- [CloudburstMC Bedrock Protocol Library](https://github.com/CloudburstMC/Protocol)
-- [GeyserMC's Java Protocol Library](https://github.com/GeyserMC/MCProtocolLib)
-- [TerminalConsoleAppender](https://github.com/Minecrell/TerminalConsoleAppender)
-- [Simple Logging Facade for Java (slf4j)](https://github.com/qos-ch/slf4j)
+| 平台 | 配置文件 | 登录令牌文件 |
+| --- | --- | --- |
+| Spigot / Paper / Purpur | `plugins/Geyser-Spigot/config.yml` | `plugins/Geyser-Spigot/saved-yggdrasil-logins.json` |
+| Fabric | `config/Geyser-Fabric/config.yml` | `config/Geyser-Fabric/saved-yggdrasil-logins.json` |
+
+- 密码不会保存到任何位置
+- `saved-yggdrasil-logins.json` 按基岩版 XUID 保存访问令牌与 Profile 信息，删除该文件可强制所有玩家重新登录
+- 该文件包含可登录凭据，请限制文件访问权限
+
+## 构建
+
+需要 JDK 21（构建 Fabric 模组时 Gradle 会使用 JDK 25 工具链）：
+
+```bash
+# Spigot 插件
+./gradlew :spigot:build
+# 产物：bootstrap/spigot/build/libs/Geyser-Spigot.jar
+
+# Fabric 模组
+./gradlew :fabric:build :fabric:mergeShadowAndJarJar
+# 产物：bootstrap/mod/fabric/build/libs/Geyser-Fabric.jar
+```
+
+## 更多文档
+
+- [第三方 Yggdrasil 认证：流程与安全说明](docs/yggdrasil-authentication.md)
+- [上游 Geyser 安装与使用文档](https://geysermc.org/wiki/geyser/)
+
+本项目基于 Geyser，遵循其 MIT 许可证。
